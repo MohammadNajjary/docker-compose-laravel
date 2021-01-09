@@ -16,23 +16,17 @@ services:
     volumes:
       - ./code:/var/www
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
-    networks:
-      - app-network
-
   #Nginx Service
   webserver:
     image: nginx:alpine
     container_name: webserver
     restart: unless-stopped
     tty: true
-    ports:
-      - "80:80"
-      - "443:443"
+    environment:
+      VIRTUAL_HOST: 'zart.io'
     volumes:
       - ./code:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
-    networks:
-      - app-network
 
   #MySQL Service
   db:
@@ -40,30 +34,32 @@ services:
     container_name: db
     restart: unless-stopped
     tty: true
-    ports:
-      - "3306:3306"
     environment:
-      MYSQL_DATABASE: demo
-      MYSQL_ROOT_PASSWORD: 123456
+      #MYSQL_DATABASE: zart
+      #MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
       SERVICE_TAGS: dev
       SERVICE_NAME: mysql
     volumes:
       - ./db-data:/var/lib/mysql/
       - ./mysql/my.cnf:/etc/mysql/my.cnf
-    networks:
-      - app-network
   #PHPMYAdmin
   phpmyadmin:
         image: 'phpmyadmin/phpmyadmin'
         restart: unless-stopped
-        ports:
-            - '8080:80'
         environment:
-            MYSQL_ROOT_PASSWORD: 123456
-            PMA_HOST: db
-        networks:
-            - app-network
+          VIRTUAL_HOST: 'phpmyadmin.local'
+          MYSQL_ROOT_PASSWORD: 123456
+          PMA_HOST: db
+  #REDIS
+  redis:
+        image: redis:latest
+        container_name: redis
+        restart: unless-stopped
+        # volumes:
+        #   - ./db-redis:/data
 #Docker Networks
-networks:
-  app-network:
-    driver: bridge
+networks: 
+  default:
+    external:
+      name: nginx-proxy 
